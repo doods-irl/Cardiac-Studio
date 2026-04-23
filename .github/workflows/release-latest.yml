@@ -1,0 +1,133 @@
+name: Release Latest Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: release-latest
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  release-windows:
+    runs-on: windows-latest
+    env:
+      RELEASE_TAG: latest
+      RELEASE_TITLE: Latest build
+      ASSET_DIR: release-assets
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Windows installer
+        uses: tauri-apps/tauri-action@action-v0.6.2
+        with:
+          args: --bundles msi
+
+      - name: Prepare release assets
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          New-Item -ItemType Directory -Force -Path $env:ASSET_DIR | Out-Null
+
+          $installer = Get-ChildItem -Path "src-tauri/target/release/bundle/msi" -Filter *.msi -Recurse |
+            Select-Object -First 1
+          if (-not $installer) {
+            throw "MSI installer not found."
+          }
+
+          $portable = Get-ChildItem -Path "src-tauri/target/release" -Filter "cardiac.exe" -File |
+            Select-Object -First 1
+          if (-not $portable) {
+            throw "Portable executable not found."
+          }
+
+          Copy-Item -LiteralPath $installer.FullName `
+            -Destination (Join-Path $env:ASSET_DIR "Cardiac-windows-installer.msi") `
+            -Force
+          Copy-Item -LiteralPath $portable.FullName `
+            -Destination (Join-Path $env:ASSET_DIR "Cardiac-windows-portable.exe") `
+            -Force
+
+      - name: Move latest tag to this commit
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $refPath = "repos/$env:REPOSITORY/git/refs/tags/$env:RELEASE_TAG"
+
+          gh api $refPath *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh api --method PATCH $refPath -f sha="$env:RELEASE_SHA" -F force=true *> $null
+          } else {
+            gh api --method POST "repos/$env:REPOSITORY/git/refs" `
+              -f ref="refs/tags/$env:RELEASE_TAG" `
+              -f sha="$env:RELEASE_SHA" *> $null
+          }
+
+      - name: Create or update GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $notes = @"
+          Automated build from commit $env:RELEASE_SHA.
+
+          Downloads:
+          - Cardiac-windows-installer.msi
+          - Cardiac-windows-portable.exe
+          "@
+
+          gh release view $env:RELEASE_TAG --repo $env:REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release edit $env:RELEASE_TAG `
+              --repo $env:REPOSITORY `
+              --title $env:RELEASE_TITLE `
+              --notes $notes `
+              --latest
+          } else {
+            gh release create $env:RELEASE_TAG `
+              --repo $env:REPOSITORY `
+              --target $env:RELEASE_SHA `
+              --title $env:RELEASE_TITLE `
+              --notes $notes `
+              --latest
+          }
+
+      - name: Upload release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          gh release upload $env:RELEASE_TAG `
+            "$env:ASSET_DIR/Cardiac-windows-installer.msi" `
+            "$env:ASSET_DIR/Cardiac-windows-portable.exe" `
+            --repo $env:REPOSITORY `
+            --clobber
