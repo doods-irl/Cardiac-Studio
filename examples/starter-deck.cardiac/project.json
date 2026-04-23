@@ -1,0 +1,223 @@
+{
+  "meta": {
+    "name": "Starter Deck",
+    "description": "A small example deck showing text and image bindings.",
+    "author": "Cardiac team"
+  },
+  "canvasDefaults": {
+    "widthMm": 63.5,
+    "heightMm": 88.9,
+    "dpi": 300,
+    "bleedMm": 3,
+    "marginMm": 3,
+    "safeAreaMm": 5,
+    "cornerRadiusMm": 3
+  },
+  "templates": [
+    {
+      "id": "tpl-card-0001",
+      "name": "Creature",
+      "datasetId": "ds-creatures-0001",
+      "canvas": {
+        "widthMm": 63.5,
+        "heightMm": 88.9,
+        "dpi": 300,
+        "bleedMm": 3,
+        "marginMm": 3,
+        "safeAreaMm": 5,
+        "cornerRadiusMm": 3
+      },
+      "root": {
+        "id": "el-root",
+        "type": "group",
+        "name": "Root",
+        "x": 0, "y": 0, "w": 63.5, "h": 88.9,
+        "rotation": 0, "opacity": 1, "locked": false, "hidden": false, "zIndex": 0,
+        "children": [
+          {
+            "id": "el-bg",
+            "type": "background",
+            "name": "Background",
+            "x": 0, "y": 0, "w": 63.5, "h": 88.9,
+            "rotation": 0, "opacity": 1, "locked": false, "hidden": false, "zIndex": 0,
+            "fill": { "kind": "solid", "color": "#f4ece1" },
+            "bindings": {
+              "fill.color": {
+                "field": "rarity",
+                "transforms": [
+                  { "kind": "var", "variableId": "var-rarityColor" }
+                ],
+                "fallback": "#f4ece1"
+              }
+            }
+          },
+          {
+            "id": "el-frame",
+            "type": "shape",
+            "name": "Frame",
+            "x": 3, "y": 3, "w": 57.5, "h": 82.9,
+            "rotation": 0, "opacity": 1, "locked": false, "hidden": false, "zIndex": 1,
+            "shape": "rect",
+            "fill": { "kind": "solid", "color": "#ffffff" },
+            "stroke": { "color": "#1a1a1a", "width": 0.5 },
+            "cornerRadius": 2
+          },
+          {
+            "id": "el-art",
+            "type": "image",
+            "name": "Art",
+            "x": 5, "y": 16, "w": 53.5, "h": 36,
+            "rotation": 0, "opacity": 1, "locked": false, "hidden": false, "zIndex": 5,
+            "fit": "cover",
+            "focal": { "x": 0.5, "y": 0.5 },
+            "corner": 1.5,
+            "border": { "color": "#1a1a1a", "width": 0.25 },
+            "bindings": { "assetId": { "field": "art" } }
+          },
+          {
+            "id": "el-title",
+            "type": "text",
+            "name": "Title",
+            "x": 5, "y": 5, "w": 47, "h": 9,
+            "rotation": 0, "opacity": 1, "locked": false, "hidden": false, "zIndex": 10,
+            "content": "Card Name",
+            "style": {
+              "family": "Inter", "weight": 800, "size": 6,
+              "color": "#111111", "align": "left", "valign": "middle",
+              "lineHeight": 1.1, "letterSpacing": 0
+            },
+            "overflow": "shrink",
+            "padding": { "t": 0, "r": 0, "b": 0, "l": 0 },
+            "bindings": {
+              "content": { "field": "name", "fallback": "Unnamed" }
+            }
+          },
+          {
+            "id": "el-cost",
+            "type": "stat",
+            "name": "Cost",
+            "x": 53, "y": 3, "w": 9, "h": 9,
+            "rotation": 0, "opacity": 1, "locked": false, "hidden": false, "zIndex": 11,
+            "value": 0,
+            "shape": "circle",
+            "style": {
+              "family": "Inter", "weight": 800, "size": 5,
+              "color": "#ffffff", "align": "center", "valign": "middle",
+              "lineHeight": 1, "letterSpacing": 0
+            },
+            "background": { "kind": "solid", "color": "#1a1a1a" },
+            "bindings": {
+              "value": { "field": "cost", "fallback": 0 }
+            }
+          },
+          {
+            "id": "el-rules",
+            "type": "text",
+            "name": "Rules",
+            "x": 5, "y": 55, "w": 53.5, "h": 22,
+            "rotation": 0, "opacity": 1, "locked": false, "hidden": false, "zIndex": 10,
+            "content": "Rules text",
+            "style": {
+              "family": "Inter", "weight": 400, "size": 3.5,
+              "color": "#111111", "align": "left", "valign": "top",
+              "lineHeight": 1.2, "letterSpacing": 0
+            },
+            "overflow": "shrink",
+            "padding": { "t": 0, "r": 0, "b": 0, "l": 0 },
+            "bindings": {
+              "content": { "field": "rules", "fallback": "" }
+            }
+          },
+          {
+            "id": "el-type",
+            "type": "text",
+            "name": "Type line",
+            "x": 5, "y": 78, "w": 53.5, "h": 5,
+            "rotation": 0, "opacity": 1, "locked": false, "hidden": false, "zIndex": 10,
+            "content": "Type",
+            "style": {
+              "family": "Inter", "weight": 600, "size": 3,
+              "color": "#666666", "align": "left", "valign": "middle",
+              "lineHeight": 1.1, "letterSpacing": 0.05,
+              "uppercase": true
+            },
+            "overflow": "ellipsis",
+            "padding": { "t": 0, "r": 0, "b": 0, "l": 0 },
+            "bindings": {
+              "content": {
+                "field": "type",
+                "transforms": [
+                  { "kind": "prefix", "value": "— " }
+                ],
+                "fallback": ""
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "styles": [
+    {
+      "id": "style-title",
+      "name": "Card Title",
+      "target": "text",
+      "props": { "family": "Inter", "weight": 800, "size": 6, "color": "#111" }
+    }
+  ],
+  "palette": [
+    { "id": "col-bg", "name": "Card BG", "hex": "#f4ece1" },
+    { "id": "col-fg", "name": "Ink", "hex": "#111111" },
+    { "id": "col-ac", "name": "Accent", "hex": "#ffb84d" },
+    { "id": "col-common", "name": "Common", "hex": "#f4ece1" },
+    { "id": "col-uncommon", "name": "Uncommon", "hex": "#d9ecd0" },
+    { "id": "col-rare", "name": "Rare", "hex": "#d6e0ff" },
+    { "id": "col-legendary", "name": "Legendary", "hex": "#ffe3b5" }
+  ],
+  "datasets": [
+    {
+      "id": "ds-creatures-0001",
+      "name": "Creatures",
+      "fields": [
+        { "id": "f-name",   "name": "name",   "type": "text",     "width": 160 },
+        { "id": "f-type",   "name": "type",   "type": "text",     "width": 120 },
+        { "id": "f-cost",   "name": "cost",   "type": "number",   "width": 70 },
+        { "id": "f-rules",  "name": "rules",  "type": "longtext", "width": 320 },
+        { "id": "f-art",    "name": "art",    "type": "image",    "width": 140 },
+        { "id": "f-rarity", "name": "rarity", "type": "enum",
+          "enumOptions": ["common", "uncommon", "rare", "legendary"], "width": 100 }
+      ]
+    }
+  ],
+  "fonts": [],
+  "assets": [],
+  "icons": [],
+  "variables": [
+    {
+      "id": "var-rarityIcon",
+      "name": "rarityIcon",
+      "description": "Rarity → badge asset. Populate with an image per rarity.",
+      "keyType": "enum",
+      "enumOptions": ["common", "uncommon", "rare", "legendary"],
+      "valueType": "image",
+      "entries": {}
+    },
+    {
+      "id": "var-rarityColor",
+      "name": "rarityColor",
+      "description": "Rarity → background hex.",
+      "keyType": "enum",
+      "enumOptions": ["common", "uncommon", "rare", "legendary"],
+      "valueType": "color",
+      "entries": {
+        "common":    "#f4ece1",
+        "uncommon":  "#d9ecd0",
+        "rare":      "#d6e0ff",
+        "legendary": "#ffe3b5"
+      }
+    }
+  ],
+  "exportProfiles": [
+    { "id": "exp-default", "name": "PNG 300dpi", "format": "png", "dpi": 300, "bleed": true, "cropMarks": false }
+  ]
+}

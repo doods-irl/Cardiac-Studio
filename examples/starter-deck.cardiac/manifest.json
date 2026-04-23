@@ -1,0 +1,13 @@
+{
+  "format": "cardiac",
+  "schemaVersion": 1,
+  "appVersion": "0.1.0",
+  "projectId": "01H8ZW3K2QMNV6A1EXAMPLE0001",
+  "created": "2026-04-22T10:00:00Z",
+  "modified": "2026-04-22T10:00:00Z",
+  "name": "Starter Deck",
+  "integrity": {
+    "projectJsonSha1": "placeholder",
+    "assetManifest": null
+  }
+}

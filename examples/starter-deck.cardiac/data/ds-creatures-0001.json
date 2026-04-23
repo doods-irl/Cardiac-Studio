@@ -1,0 +1,38 @@
+[
+  {
+    "id": "rec-0001",
+    "name": "Goblin Scout",
+    "type": "Creature · Goblin",
+    "cost": 1,
+    "rules": "Haste. When this enters the battlefield: draw a card if an opponent controls a creature.",
+    "art": "",
+    "rarity": "common"
+  },
+  {
+    "id": "rec-0002",
+    "name": "Forest Wolf",
+    "type": "Creature · Beast",
+    "cost": 2,
+    "rules": "When this enters: reveal the top card of your library. If it is a beast, put it into your hand.",
+    "art": "",
+    "rarity": "uncommon"
+  },
+  {
+    "id": "rec-0003",
+    "name": "Ancient Oak Warden",
+    "type": "Creature · Treefolk",
+    "cost": 4,
+    "rules": "Vigilance. Other allies you control get +1/+1. Pay 2: regenerate this.",
+    "art": "",
+    "rarity": "rare"
+  },
+  {
+    "id": "rec-0004",
+    "name": "Phoenix of the Ember Peaks",
+    "type": "Creature · Phoenix · Legendary",
+    "cost": 6,
+    "rules": "Flying, haste. If this would be destroyed, exile it instead. At the start of your next upkeep, return it to the battlefield.",
+    "art": "",
+    "rarity": "legendary"
+  }
+]

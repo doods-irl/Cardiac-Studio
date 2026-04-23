@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Repurpose the app logo as the favicon so dev tools / browser
+         chrome don't 404 on /favicon.ico every reload. -->
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <!-- CSP is delivered by the Tauri shell at runtime (see
+         `app.security.csp` in src-tauri/tauri.conf.json). An additional
+         <meta http-equiv="Content-Security-Policy"> tag here would
+         intersect with Tauri's CSP and silently tighten it — it was
+         previously blocking `http://asset.localhost` and `ipc:` that
+         the Rust side tries to add, so every CSP fix in the Tauri
+         config looked like a no-op. -->
+    <title>Cardiac</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Black&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&family=Anton&family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&family=Unbounded:wght@400;500;600;700;800;900&family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Barlow+Condensed:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

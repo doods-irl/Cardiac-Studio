@@ -1,0 +1,302 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cardiac.app/schema/project.schema.json",
+  "title": "Cardiac Project",
+  "type": "object",
+  "required": [
+    "meta",
+    "canvasDefaults",
+    "templates",
+    "styles",
+    "palette",
+    "datasets",
+    "fonts",
+    "assets",
+    "variables",
+    "exportProfiles"
+  ],
+  "properties": {
+    "meta": { "$ref": "#/$defs/ProjectMeta" },
+    "canvasDefaults": { "$ref": "#/$defs/CanvasSpec" },
+    "templates": { "type": "array", "items": { "$ref": "#/$defs/Template" } },
+    "styles": { "type": "array", "items": { "$ref": "#/$defs/StyleDef" } },
+    "palette": { "type": "array", "items": { "$ref": "#/$defs/PaletteColor" } },
+    "datasets": { "type": "array", "items": { "$ref": "#/$defs/DatasetMeta" } },
+    "fonts": { "type": "array", "items": { "$ref": "#/$defs/FontRef" } },
+    "assets": { "type": "array", "items": { "$ref": "#/$defs/AssetRef" } },
+    "variables": { "type": "array", "items": { "$ref": "#/$defs/Variable" } },
+    "icons":     { "type": "array", "items": { "$ref": "#/$defs/NamedIcon" } },
+    "exportProfiles": { "type": "array", "items": { "$ref": "#/$defs/ExportProfile" } }
+  },
+  "$defs": {
+    "ULID": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$|^[a-zA-Z0-9-]+$" },
+    "HexColor": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$" },
+
+    "ProjectMeta": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "author": { "type": "string" }
+      }
+    },
+
+    "CanvasSpec": {
+      "type": "object",
+      "required": ["widthMm", "heightMm", "dpi", "bleedMm", "marginMm", "safeAreaMm"],
+      "properties": {
+        "widthMm": { "type": "number", "minimum": 1 },
+        "heightMm": { "type": "number", "minimum": 1 },
+        "dpi": { "type": "integer", "minimum": 72 },
+        "bleedMm": { "type": "number", "minimum": 0 },
+        "marginMm": { "type": "number", "minimum": 0 },
+        "safeAreaMm": { "type": "number", "minimum": 0 },
+        "cornerRadiusMm": { "type": "number", "minimum": 0 },
+        "background": { "$ref": "#/$defs/Fill" }
+      }
+    },
+
+    "Variable": {
+      "type": "object",
+      "required": ["id", "name", "keyType", "valueType", "entries"],
+      "properties": {
+        "id":          { "$ref": "#/$defs/ULID" },
+        "name":        { "type": "string" },
+        "description": { "type": "string" },
+        "keyType":     { "enum": ["text", "number", "enum"] },
+        "enumOptions": { "type": "array", "items": { "type": "string" } },
+        "valueType":   { "enum": ["image", "color", "text", "number", "boolean"] },
+        "entries":     { "type": "object" },
+        "defaultValue": {}
+      }
+    },
+    "NamedIcon": {
+      "type": "object",
+      "required": ["id", "name", "assetId"],
+      "properties": {
+        "id":      { "$ref": "#/$defs/ULID" },
+        "name":    { "type": "string", "pattern": "^[A-Za-z0-9_-]+$" },
+        "assetId": { "$ref": "#/$defs/ULID" }
+      }
+    },
+
+    "Template": {
+      "type": "object",
+      "required": ["id", "name", "canvas", "root"],
+      "properties": {
+        "id": { "$ref": "#/$defs/ULID" },
+        "name": { "type": "string" },
+        "datasetId": { "oneOf": [{ "$ref": "#/$defs/ULID" }, { "type": "null" }] },
+        "canvas": { "$ref": "#/$defs/CanvasSpec" },
+        "root": { "$ref": "#/$defs/Element" }
+      }
+    },
+
+    "Element": {
+      "type": "object",
+      "required": ["id", "type", "name", "x", "y", "w", "h"],
+      "properties": {
+        "id": { "$ref": "#/$defs/ULID" },
+        "type": {
+          "enum": ["group", "text", "image", "shape", "icon", "frame", "mask", "background", "stat"]
+        },
+        "name": { "type": "string" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "w": { "type": "number" },
+        "h": { "type": "number" },
+        "rotation": { "type": "number" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "locked": { "type": "boolean" },
+        "hidden": { "type": "boolean" },
+        "zIndex": { "type": "number" },
+        "maskId": { "$ref": "#/$defs/ULID" },
+        "effects": { "type": "array", "items": { "$ref": "#/$defs/Effect" } },
+        "bindings": { "type": "object", "additionalProperties": { "$ref": "#/$defs/Binding" } },
+        "visibilityBinding": { "$ref": "#/$defs/Binding" },
+        "styleRefs": { "type": "array", "items": { "$ref": "#/$defs/ULID" } },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/Element" } },
+        "content": { "type": "string" },
+        "style": { "type": "object" },
+        "overflow": { "enum": ["wrap", "shrink", "clip", "ellipsis", "scale"] },
+        "padding": { "type": "object" },
+        "autoFit": { "type": "boolean" },
+        "assetId": { "$ref": "#/$defs/ULID" },
+        "fit": { "enum": ["contain", "cover", "stretch", "crop"] },
+        "focal": { "type": "object" },
+        "corner": { "type": "number" },
+        "border": { "type": "object" },
+        "filter": { "type": "object" },
+        "shape": { "type": "string" },
+        "fill": { "$ref": "#/$defs/Fill" },
+        "stroke": { "$ref": "#/$defs/Stroke" },
+        "cornerRadius": { "type": "number" },
+        "path": { "type": "string" },
+        "sides": { "type": "integer" },
+        "value": { "type": "number" },
+        "label": { "type": "string" },
+        "tint": { "$ref": "#/$defs/HexColor" },
+        "background": { "$ref": "#/$defs/Fill" }
+      }
+    },
+
+    "Effect": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["dropShadow", "innerShadow", "glow", "blur"] },
+        "dx": { "type": "number" },
+        "dy": { "type": "number" },
+        "blur": { "type": "number" },
+        "color": { "$ref": "#/$defs/HexColor" },
+        "opacity": { "type": "number" },
+        "spread": { "type": "number" }
+      }
+    },
+
+    "Fill": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "color"],
+          "properties": {
+            "kind": { "const": "solid" },
+            "color": { "$ref": "#/$defs/HexColor" },
+            "opacity": { "type": "number" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "angle", "stops"],
+          "properties": {
+            "kind": { "const": "linear" },
+            "angle": { "type": "number" },
+            "stops": { "type": "array" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "cx", "cy", "r", "stops"],
+          "properties": {
+            "kind": { "const": "radial" },
+            "cx": { "type": "number" }, "cy": { "type": "number" }, "r": { "type": "number" },
+            "stops": { "type": "array" }
+          }
+        }
+      ]
+    },
+
+    "Stroke": {
+      "type": "object",
+      "required": ["color", "width"],
+      "properties": {
+        "color": { "$ref": "#/$defs/HexColor" },
+        "width": { "type": "number" },
+        "dash": { "type": "array", "items": { "type": "number" } }
+      }
+    },
+
+    "StyleDef": {
+      "type": "object",
+      "required": ["id", "name", "target", "props"],
+      "properties": {
+        "id": { "$ref": "#/$defs/ULID" },
+        "name": { "type": "string" },
+        "target": { "enum": ["text", "frame", "image"] },
+        "props": { "type": "object" }
+      }
+    },
+
+    "PaletteColor": {
+      "type": "object",
+      "required": ["id", "name", "hex"],
+      "properties": {
+        "id": { "$ref": "#/$defs/ULID" },
+        "name": { "type": "string" },
+        "hex": { "$ref": "#/$defs/HexColor" }
+      }
+    },
+
+    "Binding": {
+      "type": "object",
+      "properties": {
+        "field": { "type": "string" },
+        "static": {},
+        "transforms": { "type": "array", "items": { "$ref": "#/$defs/Transform" } },
+        "fallback": {}
+      }
+    },
+    "Transform": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": { "kind": { "type": "string" } }
+    },
+
+    "DatasetMeta": {
+      "type": "object",
+      "required": ["id", "name", "fields"],
+      "properties": {
+        "id": { "$ref": "#/$defs/ULID" },
+        "name": { "type": "string" },
+        "fields": { "type": "array", "items": { "$ref": "#/$defs/FieldDef" } }
+      }
+    },
+    "FieldDef": {
+      "type": "object",
+      "required": ["id", "name", "type"],
+      "properties": {
+        "id": { "$ref": "#/$defs/ULID" },
+        "name": { "type": "string" },
+        "type": {
+          "enum": ["text", "longtext", "number", "bool", "enum", "color", "image", "tags", "date", "derived"]
+        },
+        "enumOptions": { "type": "array", "items": { "type": "string" } },
+        "default": {},
+        "width": { "type": "number" },
+        "formula": { "type": "string" }
+      }
+    },
+
+    "AssetRef": {
+      "type": "object",
+      "required": ["id", "kind", "path", "originalName", "hash"],
+      "properties": {
+        "id": { "$ref": "#/$defs/ULID" },
+        "kind": { "enum": ["image", "font", "icon"] },
+        "path": { "type": "string" },
+        "originalName": { "type": "string" },
+        "hash": { "type": "string" },
+        "width": { "type": "integer" },
+        "height": { "type": "integer" },
+        "family": { "type": "string" },
+        "weight": { "type": "integer" }
+      }
+    },
+    "FontRef": {
+      "type": "object",
+      "required": ["id", "family", "assetId", "weight", "italic", "bundled"],
+      "properties": {
+        "id": { "$ref": "#/$defs/ULID" },
+        "family": { "type": "string" },
+        "assetId": { "$ref": "#/$defs/ULID" },
+        "weight": { "type": "integer" },
+        "italic": { "type": "boolean" },
+        "bundled": { "type": "boolean" }
+      }
+    },
+
+    "ExportProfile": {
+      "type": "object",
+      "required": ["id", "name", "format", "dpi"],
+      "properties": {
+        "id": { "$ref": "#/$defs/ULID" },
+        "name": { "type": "string" },
+        "format": { "enum": ["png", "pdf", "svg"] },
+        "dpi": { "type": "integer", "minimum": 72 },
+        "bleed": { "type": "boolean" },
+        "cropMarks": { "type": "boolean" }
+      }
+    }
+  }
+}
