@@ -6,7 +6,33 @@ import { seedStarter, defaultDataset } from "@/model/defaults";
 export async function openProject(path: string): Promise<LoadedProject> {
   if (!hasTauri()) throw new Error("openProject requires the desktop shell");
   const raw = (await invoke.openProject(path)) as LoadedProject;
-  return raw;
+  // Self-repair for projects that were created under earlier code that
+  // didn't persist the seeded starter template — the disk has an empty
+  // `templates` array, which would otherwise render a blank editor with
+  // no way in. The UI forbids deleting the last template, so an empty
+  // project on disk is definitionally an un-seeded new project and safe
+  // to re-seed.
+  const needsSeed = (raw.project.templates?.length ?? 0) === 0
+                 && (raw.project.datasets?.length ?? 0) === 0;
+  if (!needsSeed) return raw;
+  const seeded: Project = seedStarter(raw.project);
+  const tplDatasetId = seeded.templates[0]?.datasetId ?? null;
+  const seededRecords = tplDatasetId
+    ? { [tplDatasetId]: defaultDataset().records }
+    : {};
+  const repaired: LoadedProject = { ...raw, project: seeded, records: seededRecords };
+  try {
+    const savedManifest = (await invoke.saveProject({
+      path: repaired.path,
+      manifest: repaired.manifest,
+      project: repaired.project,
+      records: repaired.records,
+    })) as LoadedProject["manifest"];
+    return { ...repaired, manifest: savedManifest };
+  } catch (e) {
+    console.warn("[openProject] failed to persist self-repaired project", e);
+    return repaired;
+  }
 }
 
 /** Create a new project folder and seed it with a starter template + dataset. */
@@ -24,8 +50,32 @@ export async function newProject(path: string, name: string): Promise<LoadedProj
   const raw = (await invoke.newProject(path, name)) as LoadedProject;
   const seeded: Project = seedStarter(raw.project);
   const tplDatasetId = seeded.templates[0]?.datasetId ?? null;
-  const records = tplDatasetId ? { [tplDatasetId]: [] } : {};
-  return { ...raw, project: seeded, records };
+  // Seed the first dataset with its default records too, so a fresh
+  // project isn't missing card content the moment it opens.
+  const seededRecords = tplDatasetId
+    ? { [tplDatasetId]: defaultDataset().records }
+    : {};
+  const loaded: LoadedProject = { ...raw, project: seeded, records: seededRecords };
+
+  // Immediately persist the seeded state to disk. Without this, the
+  // freshly-written project.json from Rust still carries empty
+  // templates/datasets — a user who creates a project and closes
+  // without editing would reopen to a blank view because what the
+  // Rust side reads back wasn't the seeded shape.
+  try {
+    const savedManifest = (await invoke.saveProject({
+      path: loaded.path,
+      manifest: loaded.manifest,
+      project: loaded.project,
+      records: loaded.records,
+    })) as LoadedProject["manifest"];
+    return { ...loaded, manifest: savedManifest };
+  } catch (e) {
+    // Don't fail the whole create flow if the save fails — the user
+    // still gets the seeded in-memory editor and can save manually.
+    console.warn("[newProject] failed to persist seeded project", e);
+    return loaded;
+  }
 }
 
 function fabricateInMemoryProject(path: string, name: string): LoadedProject {

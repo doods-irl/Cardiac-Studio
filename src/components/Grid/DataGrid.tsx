@@ -4,6 +4,7 @@ import { useEditor } from "@/store/editor";
 import { newId } from "@/model/ids";
 import type { AssetRef, FieldDef, FieldType, NamedImage } from "@/model/types";
 import { importImage } from "@/engine/format/assets";
+import { hasTauri, assetFileUrl } from "@/io/tauri";
 import { IconAutocompleteTextarea } from "@/components/Panels/IconAutocompleteTextarea";
 import { CsvListInput } from "@/components/Panels/CsvListInput";
 
@@ -256,11 +257,8 @@ function TextCell({ value, onChange, projectPath, multiline }: {
       assets={loaded.project.assets}
       assetUrl={(a) => {
         if (a.path.startsWith("data:") || a.path.startsWith("http")) return a.path;
-        const g = globalThis as unknown as { __TAURI__?: { core?: { convertFileSrc?: (s: string) => string } } };
-        if (g.__TAURI__?.core?.convertFileSrc) {
-          return g.__TAURI__.core.convertFileSrc(`${projectPath.replace(/\\/g, "/").replace(/\/$/, "")}/${a.path}`);
-        }
-        return "";
+        if (!hasTauri()) return "";
+        return assetFileUrl(`${projectPath.replace(/\\/g, "/").replace(/\/$/, "")}/${a.path}`);
       }}
     />
   );
@@ -421,10 +419,7 @@ function ImageCell({ value, assets, projectPath, onChange }: {
 
 function resolveAssetUrl(projectPath: string, rel: string): string {
   if (rel.startsWith("data:") || rel.startsWith("http")) return rel;
-  const g = globalThis as unknown as { __TAURI__?: { core?: { convertFileSrc?: (s: string) => string } } };
-  if (g.__TAURI__?.core?.convertFileSrc) {
-    const fileUrl = `${projectPath.replace(/\\/g, "/").replace(/\/$/, "")}/${rel}`;
-    return g.__TAURI__.core.convertFileSrc(fileUrl);
-  }
-  return "";
+  if (!hasTauri()) return "";
+  const fileUrl = `${projectPath.replace(/\\/g, "/").replace(/\/$/, "")}/${rel}`;
+  return assetFileUrl(fileUrl);
 }

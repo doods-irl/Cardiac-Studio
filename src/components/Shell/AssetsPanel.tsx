@@ -3,7 +3,7 @@ import { useDoc } from "@/store/document";
 import { useEditor } from "@/store/editor";
 import { Icon, IconButton } from "./Icons";
 import { importImage, importImages, importFont, importFonts } from "@/engine/format/assets";
-import { hasTauri } from "@/io/tauri";
+import { hasTauri, assetFileUrl } from "@/io/tauri";
 import type { AssetRef, NamedIcon } from "@/model/types";
 
 type AssetsTab = "images" | "icons" | "fonts";
@@ -599,10 +599,8 @@ function FontsView() {
 function assetDisplayUrl(projectPath: string, rel: string): string {
   if (rel.startsWith("data:") || rel.startsWith("http")) return rel;
   if (hasTauri()) {
-    const g = globalThis as unknown as { __TAURI__?: { core?: { convertFileSrc?: (s: string) => string } } };
     const fileUrl = `${projectPath.replace(/\\/g, "/").replace(/\/$/, "")}/${rel}`;
-    if (g.__TAURI__?.core?.convertFileSrc) return g.__TAURI__.core.convertFileSrc(fileUrl);
-    return fileUrl;
+    return assetFileUrl(fileUrl);
   }
   return rel;
 }

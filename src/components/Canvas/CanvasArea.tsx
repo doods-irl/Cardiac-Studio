@@ -4,7 +4,7 @@ import { useEditor } from "@/store/editor";
 import { renderTemplate, renderGhostOverlay } from "@/engine/render/svg";
 import { findElement } from "@/model/selectors";
 import type { AssetRef, DataRecord, Element, ElementGroup } from "@/model/types";
-import { hasTauri } from "@/io/tauri";
+import { hasTauri, assetFileUrl } from "@/io/tauri";
 import { Icon } from "@/components/Shell/Icons";
 
 const MM_TO_PX = 4; // px per mm at zoom = 1
@@ -232,28 +232,34 @@ export function CanvasArea() {
     });
   };
 
-  const onWheel = (e: React.WheelEvent) => {
-    if (!(e.ctrlKey || e.metaKey)) return;
-    e.preventDefault();
-    const factor = e.deltaY > 0 ? 0.9 : 1.1;
-    // Clamp matches the setZoom bounds in the editor store so the
-    // pan math below uses the actual ratio applied rather than the
-    // requested one (avoids a small drift when we bump into a bound).
-    const newZoom = Math.max(0.1, Math.min(4, zoom * factor));
-    const actualFactor = newZoom / zoom;
-    // Keep the point under the cursor stationary as we zoom. Compute
-    // cursor position in the canvas-area's local space, then scale the
-    // pan vector around that anchor so the world coordinate at the
-    // cursor is unchanged after the zoom step.
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const cx = e.clientX - rect.left;
-    const cy = e.clientY - rect.top;
-    setPan({
-      x: cx - (cx - pan.x) * actualFactor,
-      y: cy - (cy - pan.y) * actualFactor,
-    });
-    setZoom(newZoom);
-  };
+  // Ctrl/Cmd + wheel zooms the canvas. Bound as a native
+  // `{ passive: false }` listener rather than via React's `onWheel` —
+  // React 17+ registers wheel handlers as passive by default, which
+  // silently ignores `preventDefault()`. Without the hard prevent, the
+  // browser also handles the Ctrl+wheel and zooms the whole page at
+  // the same time as our canvas zoom.
+  useEffect(() => {
+    const node = stageRef.current;
+    if (!node) return;
+    const handler = (ev: WheelEvent) => {
+      if (!(ev.ctrlKey || ev.metaKey)) return;
+      ev.preventDefault();
+      const z = useEditor.getState().zoom;
+      const factor = ev.deltaY > 0 ? 0.9 : 1.1;
+      const newZoom = Math.max(0.1, Math.min(4, z * factor));
+      const actualFactor = newZoom / z;
+      const rect = node.getBoundingClientRect();
+      const cx = ev.clientX - rect.left;
+      const cy = ev.clientY - rect.top;
+      setPan((p) => ({
+        x: cx - (cx - p.x) * actualFactor,
+        y: cy - (cy - p.y) * actualFactor,
+      }));
+      setZoom(newZoom);
+    };
+    node.addEventListener("wheel", handler, { passive: false });
+    return () => node.removeEventListener("wheel", handler);
+  }, [setZoom]);
 
   const corner = tpl.canvas.cornerRadiusMm ?? 0;
   const stageCorner = (corner / W) * stageW;
@@ -290,7 +296,6 @@ export function CanvasArea() {
       <div
         className={"canvas-area tool-" + tool + (dragging?.kind === "pan" ? " panning" : "")}
         ref={stageRef}
-        onWheel={onWheel}
         onMouseDown={onViewportMouseDown}
       >
         <div className="tool-dock" onMouseDown={(e) => e.stopPropagation()}>
@@ -589,10 +594,14 @@ function worldBoxOf(root: ElementGroup, id: string): { x: number; y: number; w: 
 function projectAssetUrl(projectPath: string, rel: string): string {
   if (rel.startsWith("data:") || rel.startsWith("http")) return rel;
   if (hasTauri()) {
-    const g = globalThis as unknown as { __TAURI__?: { core?: { convertFileSrc?: (s: string) => string } } };
+    // Go through `assetFileUrl`, which wraps `@tauri-apps/api/core`'s
+    // `convertFileSrc`. The old code sniffed the legacy `__TAURI__`
+    // global, which Tauri 2 no longer exposes by default — without
+    // the proper asset protocol URL the webview can't fetch the file
+    // (CSP + asset scope only trust `asset://` / `http://asset.localhost`
+    // URLs), so images rendered as broken.
     const fileUrl = `${projectPath.replace(/\\/g, "/").replace(/\/$/, "")}/${rel}`;
-    if (g.__TAURI__?.core?.convertFileSrc) return g.__TAURI__.core.convertFileSrc(fileUrl);
-    return fileUrl;
+    return assetFileUrl(fileUrl);
   }
   return "";
 }
