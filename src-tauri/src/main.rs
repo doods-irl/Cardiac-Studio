@@ -36,6 +36,7 @@ fn main() {
             assets::remove_asset,
             export::export_card_png,
             export::export_deck_pngs,
+            export::export_deck_pdf,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Cardiac");

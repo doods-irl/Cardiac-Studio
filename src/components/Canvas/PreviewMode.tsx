@@ -2,6 +2,8 @@ import { useMemo } from "react";
 import { useDoc } from "@/store/document";
 import { useEditor } from "@/store/editor";
 import { renderTemplate } from "@/engine/render/svg";
+import { hasTauri, assetFileUrl } from "@/io/tauri";
+import type { AssetRef } from "@/model/types";
 
 export function PreviewMode() {
   const loaded = useDoc((s) => s.loaded);
@@ -46,7 +48,11 @@ export function PreviewMode() {
               variables: loaded.project.variables ?? [],
               palette: loaded.project.palette ?? [],
               icons: loaded.project.icons ?? [],
-              assetUrl: (a) => a.path.startsWith("data:") ? a.path : "",
+              assetUrl: (a: AssetRef) => {
+                if (a.path.startsWith("data:") || a.path.startsWith("http")) return a.path;
+                if (!hasTauri()) return "";
+                return assetFileUrl(`${loaded.path.replace(/\\/g, "/").replace(/\/$/, "")}/${a.path}`);
+              },
               selectedId: null,
             });
             const rec = r as { name?: string; type?: string };

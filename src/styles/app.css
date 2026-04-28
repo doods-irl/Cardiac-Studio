@@ -1605,6 +1605,46 @@ body.layers-dragging, body.layers-dragging * {
   background: var(--bg-1); border: 2px solid var(--line);
   padding: 12px; max-height: 180px; overflow: auto;
 }
+.deck-picker {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 28px; max-width: 960px;
+}
+.deck-picker-label {
+  font-family: var(--font-mono);
+  font-size: 10px; color: var(--fg-3);
+  text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+  flex-shrink: 0;
+}
+.deck-tabs {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.deck-tab {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  background: var(--bg-1);
+  color: var(--fg);
+  border: 2px solid var(--line);
+  font-family: var(--font-display);
+  font-weight: 700; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.deck-tab:hover:not(:disabled) { background: var(--bg-2); }
+.deck-tab.on {
+  background: var(--accent); color: var(--accent-ink);
+  box-shadow: 4px 4px 0 var(--line);
+}
+.deck-tab:disabled { opacity: 0.4; cursor: default; }
+.deck-tab .deck-tab-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 6px;
+  border: 1.5px solid var(--line);
+  background: var(--bg);
+  color: var(--fg-2);
+  font-weight: 600;
+}
+.deck-tab.on .deck-tab-count { background: var(--bg-1); color: var(--fg); }
 
 /* Assets tab */
 .assets-panel-stack {
@@ -2191,7 +2231,9 @@ body.layers-dragging, body.layers-dragging * {
   background: var(--bg-1);
   border: 3px solid var(--line);
   box-shadow: 12px 12px 0 var(--accent);
-  padding: 32px 36px; width: 440px;
+  padding: 32px 36px;
+  width: 520px;
+  max-width: calc(100vw - 80px);
 }
 .welcome h1 {
   margin: 0 0 10px 0;
@@ -2641,3 +2683,225 @@ body.layers-dragging, body.layers-dragging * {
 .row-item .ctrl:disabled { opacity: 0.25; cursor: default; }
 .row-item.active .ctrl { color: var(--accent-ink); }
 .row-item.active .ctrl:hover:not(:disabled) { background: var(--bg); color: var(--fg); border-color: var(--line); }
+
+/* ── In-app dialogs (replace browser prompt/confirm/alert) ──────── */
+.dlg-backdrop {
+  position: fixed; inset: 0;
+  z-index: 1000;
+  display: grid; place-items: center;
+  background: rgba(13, 14, 16, 0.55);
+  backdrop-filter: blur(2px);
+  animation: dlg-fade 120ms ease-out;
+}
+@keyframes dlg-fade { from { opacity: 0; } to { opacity: 1; } }
+.dlg-card {
+  min-width: 360px;
+  max-width: min(540px, calc(100vw - 48px));
+  background: var(--bg-1);
+  border: 3px solid var(--line);
+  box-shadow: 8px 8px 0 var(--accent);
+  font-family: var(--font-ui);
+  animation: dlg-rise 140ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+@keyframes dlg-rise {
+  from { transform: translateY(6px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+.dlg-head {
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--line);
+  background: var(--bg);
+}
+.dlg-head.tone-warning { background: var(--accent); color: var(--accent-ink); }
+.dlg-head.tone-error   { background: var(--hot);    color: var(--fg); }
+.dlg-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 13px;
+}
+.dlg-msg {
+  padding: 14px 16px 8px;
+  color: var(--fg-2);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.dlg-input {
+  margin: 8px 16px 4px;
+  display: block;
+  width: calc(100% - 32px);
+  padding: 10px 12px;
+  background: var(--bg);
+  color: var(--fg);
+  border: 2px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  outline: none;
+}
+.dlg-input:focus { border-color: var(--accent); }
+.dlg-error {
+  margin: 4px 16px 0;
+  padding: 6px 10px;
+  background: var(--hot);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border: 2px solid var(--line);
+}
+.dlg-actions {
+  display: flex; gap: 10px; justify-content: flex-end;
+  padding: 14px 16px 16px;
+}
+.dlg-btn {
+  padding: 10px 16px;
+  background: var(--bg); color: var(--fg);
+  border: 2px solid var(--line);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+  cursor: pointer;
+}
+.dlg-btn:hover:not(:disabled) { background: var(--bg-2); }
+.dlg-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dlg-btn.primary {
+  background: var(--accent); color: var(--accent-ink);
+  box-shadow: 4px 4px 0 var(--line);
+}
+.dlg-btn.primary:hover { background: var(--hot); color: var(--fg); }
+.dlg-btn.primary.danger {
+  background: var(--hot); color: var(--fg);
+}
+.dlg-btn.primary.danger:hover { background: var(--danger); color: var(--fg); }
+
+/* ── Toasts ─────────────────────────────────────────────────────── */
+.toast-stack {
+  position: fixed;
+  right: 16px; bottom: 48px;
+  z-index: 1100;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  padding: 10px 14px;
+  background: var(--bg-1);
+  color: var(--fg);
+  border: 2px solid var(--line);
+  box-shadow: 4px 4px 0 var(--accent);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-align: left;
+  cursor: pointer;
+  max-width: 360px;
+  animation: dlg-rise 160ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.toast.tone-success { box-shadow: 4px 4px 0 var(--accent); }
+.toast.tone-warning { box-shadow: 4px 4px 0 var(--accent); }
+.toast.tone-error   { box-shadow: 4px 4px 0 var(--hot); }
+.toast.tone-info    { box-shadow: 4px 4px 0 var(--cool); }
+.toast:hover { background: var(--bg-2); }
+
+/* ── Welcome recents list ───────────────────────────────────────── */
+.welcome .recents {
+  margin-top: 22px;
+  border-top: 2px solid var(--line);
+  padding-top: 16px;
+}
+.welcome .recents-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.welcome .recents-title {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--fg-3);
+}
+.welcome .recents-clear {
+  background: transparent;
+  border: none;
+  color: var(--fg-3);
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.welcome .recents-clear:hover { color: var(--hot); }
+.welcome .recents-list {
+  display: flex; flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.welcome .recent-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: transparent;
+  border: 2px solid transparent;
+  text-align: left;
+  cursor: pointer;
+  color: var(--fg);
+}
+.welcome .recent-row:disabled { opacity: 0.4; cursor: default; }
+.welcome .recent-row:hover:not(:disabled) {
+  background: var(--bg-2);
+  border-color: var(--line);
+}
+.welcome .recent-row .recent-meta {
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 0;
+}
+.welcome .recent-row .recent-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.welcome .recent-row .recent-path {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  direction: rtl; /* keep the file name visible when path is long */
+  text-align: left;
+}
+.welcome .recent-row .recent-when {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-3);
+  flex-shrink: 0;
+}
+.welcome .recent-row .recent-remove {
+  background: transparent;
+  border: 1.5px solid transparent;
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  width: 22px; height: 22px;
+  display: grid; place-items: center;
+  cursor: pointer;
+}
+.welcome .recent-row .recent-remove:hover {
+  color: var(--fg);
+  background: var(--hot);
+  border-color: var(--line);
+}
+.welcome .recents-empty {
+  color: var(--fg-3);
+  font-size: 12px;
+  font-style: italic;
+}

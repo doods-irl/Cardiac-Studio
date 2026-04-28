@@ -26,6 +26,7 @@ resvg = "0.42"
 usvg = "0.42"
 walkdir = "2"
 zip = { version = "2", default-features = false, features = ["deflate"] }
+printpdf = { version = "0.7", default-features = false, features = ["embedded_images"] }
 
 [features]
 default = ["custom-protocol"]

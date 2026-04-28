@@ -16,6 +16,7 @@ import { AlignButtons, computeAlign, type AlignDir } from "./AlignButtons";
 import { CARD_PRESETS } from "@/model/cardPresets";
 import { Icon } from "@/components/Shell/Icons";
 import { PalettePicker } from "./PalettePicker";
+import { confirmAction } from "@/components/Shell/Dialog";
 
 type InnerTab = "props" | "bind" | "fx";
 
@@ -273,6 +274,21 @@ function TextSection({ el }: { el: TextElement }) {
                   a === "left" ? "textAlignLeft" :
                   a === "center" ? "textAlignCenter" :
                   a === "right" ? "textAlignRight" : "textAlignJustify"
+                } size={14} />
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="prop-row">
+          <label>V-align</label>
+          <div className="seg" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
+            {(["top","middle","bottom"] as const).map((v) => (
+              <button key={v} className={el.style.valign === v ? "on" : ""}
+                onClick={() => setStyle({ valign: v })}
+                title={`Align ${v}`}>
+                <Icon name={
+                  v === "top" ? "alignTop" :
+                  v === "middle" ? "alignMiddleV" : "alignBottom"
                 } size={14} />
               </button>
             ))}
@@ -1029,8 +1045,14 @@ function VariableEditorPanel({ variableId }: { variableId: string }) {
     <div className="panel">
       <div className="section-head">
         <span className="title">𝑥 {v.name}</span>
-        <button className="action" onClick={() => {
-          if (confirm(`Delete variable "${v.name}"?`)) { remove(variableId); selectVar(null); }
+        <button className="action" onClick={async () => {
+          const ok = await confirmAction({
+            title: "Delete variable",
+            message: `Delete variable "${v.name}"?`,
+            okLabel: "Delete",
+            danger: true,
+          });
+          if (ok) { remove(variableId); selectVar(null); }
         }}>× Delete</button>
       </div>
       <div className="prop-section">

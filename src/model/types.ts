@@ -308,7 +308,9 @@ export interface StatElement extends ElementBase {
   label?: string;
   style: TextStyle;
   background?: Fill;
-  shape: "circle" | "diamond" | "shield" | "rect";
+  shape:
+    | "circle" | "rect" | "diamond" | "shield"
+    | "hexagon" | "triangle" | "pentagon" | "star" | "octagon";
 }
 
 export type Element =

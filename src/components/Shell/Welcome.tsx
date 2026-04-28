@@ -4,10 +4,16 @@ import { useEditor } from "@/store/editor";
 import { newProject, openProject } from "@/engine/format/load";
 import { hasTauri } from "@/io/tauri";
 import { defaultDataset } from "@/model/defaults";
+import { showAlert } from "./Dialog";
+import { useRecents, formatRelativeTime, type RecentProject } from "@/store/recents";
 
 export function Welcome() {
   const load = useDoc((s) => s.load);
   const [busy, setBusy] = useState(false);
+  const recents = useRecents((s) => s.list);
+  const addRecent    = useRecents((s) => s.add);
+  const removeRecent = useRecents((s) => s.remove);
+  const clearRecents = useRecents((s) => s.clear);
 
   const onNew = async () => {
     setBusy(true);
@@ -33,20 +39,32 @@ export function Welcome() {
         p.records[ds.id] = records;
       }
       load(p);
+      addRecent({ path: p.path, name: p.project.meta.name || name });
       useEditor.setState({
         activeTemplateId: p.project.templates[0]?.id ?? null,
         activeRecordId:   ds ? p.records[ds.id]?.[0]?.id ?? null : null,
       });
     } catch (e) {
       console.error(e);
-      alert(`Could not create project: ${e}`);
+      await showAlert({
+        title: "Couldn't create project",
+        message: String(e),
+        tone: "error",
+      });
     } finally {
       setBusy(false);
     }
   };
 
   const onOpen = async () => {
-    if (!hasTauri()) { alert("Open requires the desktop build (Tauri)."); return; }
+    if (!hasTauri()) {
+      await showAlert({
+        title: "Desktop only",
+        message: "Open requires the desktop build (Tauri).",
+        tone: "warning",
+      });
+      return;
+    }
     setBusy(true);
     try {
       const { open } = await import("@tauri-apps/plugin-dialog");
@@ -54,13 +72,50 @@ export function Welcome() {
       if (!picked) return;
       const p = await openProject(picked as string);
       load(p);
+      addRecent({ path: p.path, name: p.project.meta.name || "" });
       useEditor.setState({
         activeTemplateId: p.project.templates[0]?.id ?? null,
         activeRecordId:   null,
       });
     } catch (e) {
       console.error(e);
-      alert(`Could not open project: ${e}`);
+      await showAlert({
+        title: "Couldn't open project",
+        message: String(e),
+        tone: "error",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onOpenRecent = async (entry: RecentProject) => {
+    if (!hasTauri()) {
+      await showAlert({
+        title: "Desktop only",
+        message: "Opening from the recents list requires the desktop build.",
+        tone: "warning",
+      });
+      return;
+    }
+    setBusy(true);
+    try {
+      const p = await openProject(entry.path);
+      load(p);
+      addRecent({ path: p.path, name: p.project.meta.name || entry.name });
+      useEditor.setState({
+        activeTemplateId: p.project.templates[0]?.id ?? null,
+        activeRecordId:   null,
+      });
+    } catch (e) {
+      console.error(e);
+      // Project moved or deleted — drop it from the list and tell the user.
+      removeRecent(entry.path);
+      await showAlert({
+        title: "Couldn't open project",
+        message: `${entry.name} could not be opened. It may have been moved or deleted.\n\n${e}`,
+        tone: "error",
+      });
     } finally {
       setBusy(false);
     }
@@ -78,7 +133,58 @@ export function Welcome() {
           <button className="primary" disabled={busy} onClick={onNew}>New project</button>
           <button disabled={busy} onClick={onOpen}>Open…</button>
         </div>
+
+        <div className="recents">
+          <div className="recents-head">
+            <span className="recents-title">Recent projects</span>
+            {recents.length > 0 && (
+              <button className="recents-clear" onClick={clearRecents}>Clear</button>
+            )}
+          </div>
+          {recents.length === 0 ? (
+            <div className="recents-empty">No recent projects yet.</div>
+          ) : (
+            <div className="recents-list">
+              {recents.map((r) => (
+                <RecentRow key={r.path}
+                  entry={r} disabled={busy}
+                  onOpen={() => onOpenRecent(r)}
+                  onRemove={() => removeRecent(r.path)} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
+  );
+}
+
+function RecentRow({
+  entry, disabled, onOpen, onRemove,
+}: {
+  entry: RecentProject;
+  disabled: boolean;
+  onOpen: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <button
+      className="recent-row"
+      disabled={disabled}
+      onClick={onOpen}
+      title={entry.path}
+    >
+      <span className="recent-meta">
+        <span className="recent-name">{entry.name}</span>
+        <span className="recent-path">{entry.path}</span>
+      </span>
+      <span className="recent-when">{formatRelativeTime(entry.at)}</span>
+      <span
+        className="recent-remove"
+        role="button"
+        title="Remove from recents"
+        onClick={(e) => { e.stopPropagation(); onRemove(); }}
+      >×</span>
+    </button>
   );
 }

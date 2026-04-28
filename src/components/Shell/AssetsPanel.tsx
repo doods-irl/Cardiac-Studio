@@ -4,6 +4,7 @@ import { useEditor } from "@/store/editor";
 import { Icon, IconButton } from "./Icons";
 import { importImage, importImages, importFont, importFonts } from "@/engine/format/assets";
 import { hasTauri, assetFileUrl } from "@/io/tauri";
+import { promptInput, confirmAction, showAlert } from "./Dialog";
 import type { AssetRef, NamedIcon } from "@/model/types";
 
 type AssetsTab = "images" | "icons" | "fonts";
@@ -117,8 +118,13 @@ function ImagesView() {
       addImage(a.id, name, category ?? undefined);
     }
   };
-  const onAddCategory = () => {
-    const n = prompt("New category name:");
+  const onAddCategory = async () => {
+    const n = await promptInput({
+      title: "New image category",
+      placeholder: "e.g. Backgrounds",
+      okLabel: "Add",
+      validate: (v) => v.trim() ? null : "Name can't be empty",
+    });
     if (!n?.trim()) return;
     addImageCategory(n.trim());
   };
@@ -138,12 +144,16 @@ function ImagesView() {
       onRenameCategory={renameImageCategory}
       onRemoveCategory={removeImageCategory}
       onRenameItem={(id, name) => renameImage(id, name)}
-      onRemoveItem={(id) => {
+      onRemoveItem={async (id) => {
         const entry = gallery.find((g) => g.id === id);
         if (!entry) return;
-        if (confirm(`Delete "${entry.name}" from the gallery? (The image file stays in the project.)`)) {
-          removeImage(id);
-        }
+        const ok = await confirmAction({
+          title: "Delete image",
+          message: `Delete "${entry.name}" from the gallery? The image file stays in the project.`,
+          okLabel: "Delete",
+          danger: true,
+        });
+        if (ok) removeImage(id);
       }}
       onRemoveAsset={(assetId) => removeAsset(assetId)}
       onReplaceAsset={async (assetId) => {
@@ -190,8 +200,13 @@ function IconsView() {
       addIcon(name || "icon", a.id, category ?? undefined);
     }
   };
-  const onAddCategory = () => {
-    const n = prompt("New category name:");
+  const onAddCategory = async () => {
+    const n = await promptInput({
+      title: "New icon category",
+      placeholder: "e.g. Suits",
+      okLabel: "Add",
+      validate: (v) => v.trim() ? null : "Name can't be empty",
+    });
     if (!n?.trim()) return;
     addIconCategory(n.trim());
   };
@@ -211,10 +226,16 @@ function IconsView() {
       onRenameCategory={renameIconCategory}
       onRemoveCategory={removeIconCategory}
       onRenameItem={(id, name) => renameIcon(id, name)}
-      onRemoveItem={(id) => {
+      onRemoveItem={async (id) => {
         const entry = icons.find((g) => g.id === id);
         if (!entry) return;
-        if (confirm(`Remove icon "${entry.name}"? (The underlying image stays in the project.)`)) {
+        const ok = await confirmAction({
+          title: "Remove icon",
+          message: `Remove icon "${entry.name}"? The underlying image stays in the project.`,
+          okLabel: "Remove",
+          danger: true,
+        });
+        if (ok) {
           removeIcon(id);
         }
       }}
@@ -390,10 +411,14 @@ function CategoryGallery(p: CategoryGalleryProps) {
                       title={cat ? `Import into "${cat}"` : "Import (uncategorised)"} />
                     {cat !== "" && (
                       <IconButton icon="trash" title="Remove category (contents become uncategorised)" danger
-                        onClick={() => {
-                          if (confirm(`Remove category "${cat}"? ${members.length} item${members.length === 1 ? "" : "s"} will become uncategorised.`)) {
-                            p.onRemoveCategory(cat);
-                          }
+                        onClick={async () => {
+                          const ok = await confirmAction({
+                            title: "Remove category",
+                            message: `Remove category "${cat}"? ${members.length} item${members.length === 1 ? "" : "s"} will become uncategorised.`,
+                            okLabel: "Remove",
+                            danger: true,
+                          });
+                          if (ok) p.onRemoveCategory(cat);
                         }} />
                     )}
                   </span>
@@ -533,7 +558,10 @@ function FontsView() {
   const [weight, setWeight] = useState(400);
 
   const onSingle = async () => {
-    if (!family.trim()) { alert("Give the font family a name first."); return; }
+    if (!family.trim()) {
+      await showAlert({ title: "Font family", message: "Give the font family a name first.", tone: "warning" });
+      return;
+    }
     const r = await importFont(loaded.path, family.trim(), weight);
     if (r) addFont(r.asset, r.font);
   };
@@ -580,10 +608,16 @@ function FontsView() {
                 <IconButton icon="trash"
                   title={f.bundled ? "Remove starter font from project" : "Remove font"}
                   danger
-                  onClick={() => {
-                    if (confirm(f.bundled
-                      ? `Remove starter font "${f.family}" from this project?`
-                      : `Remove font "${f.family}"?`)) removeFont(f.id);
+                  onClick={async () => {
+                    const ok = await confirmAction({
+                      title: "Remove font",
+                      message: f.bundled
+                        ? `Remove starter font "${f.family}" from this project?`
+                        : `Remove font "${f.family}"?`,
+                      okLabel: "Remove",
+                      danger: true,
+                    });
+                    if (ok) removeFont(f.id);
                   }} />
               </div>
             );

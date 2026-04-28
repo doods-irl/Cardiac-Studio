@@ -3,8 +3,10 @@ import { useDoc } from "@/store/document";
 import { useEditor } from "@/store/editor";
 import { saveProject } from "@/engine/format/save";
 import { newProject, openProject } from "@/engine/format/load";
-import { hasTauri, confirmDialog } from "@/io/tauri";
+import { hasTauri } from "@/io/tauri";
 import { defaultDataset } from "@/model/defaults";
+import { confirmAction, showAlert } from "./Dialog";
+import { useRecents } from "@/store/recents";
 
 export function TitleBar() {
   const loaded = useDoc((s) => s.loaded);
@@ -73,23 +75,29 @@ export function TitleBar() {
     }
   };
 
+  const addRecent = useRecents((s) => s.add);
+
   const onSave = async () => {
     if (!loaded) return;
     try {
       const saved = await saveProject(loaded);
       useDoc.getState().markSaved(saved.manifest);
+      addRecent({ path: loaded.path, name: loaded.project.meta.name || "" });
     } catch (e) {
       console.error("[save]", e);
-      alert(`Save failed: ${e}`);
+      await showAlert({ title: "Save failed", message: String(e), tone: "error" });
     }
   };
 
   const confirmDiscard = async (): Promise<boolean> => {
     if (!dirty) return true;
-    return await confirmDialog(
-      "You have unsaved changes. Discard them and continue?",
-      { title: "Unsaved changes", okLabel: "Discard", cancelLabel: "Cancel", kind: "warning" },
-    );
+    return await confirmAction({
+      title: "Unsaved changes",
+      message: "You have unsaved changes. Discard them and continue?",
+      okLabel: "Discard",
+      cancelLabel: "Cancel",
+      danger: true,
+    });
   };
 
   const onNew = async () => {
@@ -116,6 +124,7 @@ export function TitleBar() {
         p.records[ds.id] = records;
       }
       load(p);
+      addRecent({ path: p.path, name: p.project.meta.name || name });
       useEditor.setState({
         tab: "design",
         activeTemplateId: p.project.templates[0]?.id ?? null,
@@ -125,12 +134,15 @@ export function TitleBar() {
       });
     } catch (e) {
       console.error(e);
-      alert(`Could not create project: ${e}`);
+      await showAlert({ title: "Couldn't create project", message: String(e), tone: "error" });
     }
   };
 
   const onOpen = async () => {
-    if (!hasTauri()) { alert("Open requires the desktop build."); return; }
+    if (!hasTauri()) {
+      await showAlert({ title: "Desktop only", message: "Open requires the desktop build.", tone: "warning" });
+      return;
+    }
     if (!(await confirmDiscard())) return;
     try {
       const { open } = await import("@tauri-apps/plugin-dialog");
@@ -138,6 +150,7 @@ export function TitleBar() {
       if (!picked) return;
       const p = await openProject(picked as string);
       load(p);
+      addRecent({ path: p.path, name: p.project.meta.name || "" });
       useEditor.setState({
         tab: "design",
         activeTemplateId: p.project.templates[0]?.id ?? null,
@@ -147,7 +160,7 @@ export function TitleBar() {
       });
     } catch (e) {
       console.error(e);
-      alert(`Could not open project: ${e}`);
+      await showAlert({ title: "Couldn't open project", message: String(e), tone: "error" });
     }
   };
 

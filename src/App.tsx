@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { AppShell } from "@/components/Shell/AppShell";
+import { DialogHost } from "@/components/Shell/Dialog";
 import { useDoc } from "@/store/document";
 import { useEditor } from "@/store/editor";
 import { newProject } from "@/engine/format/load";
@@ -127,5 +128,10 @@ export default function App() {
     });
   }, [fontSig]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <AppShell />;
+  return (
+    <>
+      <AppShell />
+      <DialogHost />
+    </>
+  );
 }

@@ -396,12 +396,40 @@ function renderImage(el: ImageElement, ctx: RenderCtx) {
 
 function renderIcon(el: IconElement, ctx: RenderCtx) {
   const asset = assetById(ctx, el.assetId);
-  if (!asset) return <g key={el.id} />;
+  if (!asset) {
+    // Empty slot — dashed outline only, like an empty image element,
+    // so the user sees that the slot exists and can be filled.
+    return (
+      <g key={el.id}>
+        <rect x={0} y={0} width={el.w} height={el.h}
+              fill="none" stroke="#bbbbbb"
+              strokeDasharray="1 1" strokeWidth={0.2}
+              pointerEvents="none" />
+        <text x={el.w / 2} y={el.h / 2}
+              fontSize={Math.min(3, el.h * 0.2)} fill="#888"
+              textAnchor="middle" dominantBaseline="middle">icon</text>
+      </g>
+    );
+  }
   const href = ctx.assetUrl(asset);
-  // Tinting raster icons would require a filter; for MVP we just render as-is.
+  // When `tint` is set we draw the icon as a solid-colour silhouette
+  // (feFlood + feComposite-in on SourceAlpha). That's the standard
+  // glyph-icon expectation: replace RGB with the tint, keep alpha.
+  const tintId = el.tint ? `icon_tint_${el.id}` : null;
   return (
-    <image key={el.id} href={href} x={0} y={0} width={el.w} height={el.h}
-           preserveAspectRatio="xMidYMid meet" />
+    <g key={el.id}>
+      {tintId && (
+        <defs>
+          <filter id={tintId} x="0" y="0" width="100%" height="100%">
+            <feFlood floodColor={el.tint} result="tintCol" />
+            <feComposite in="tintCol" in2="SourceAlpha" operator="in" />
+          </filter>
+        </defs>
+      )}
+      <image href={href} x={0} y={0} width={el.w} height={el.h}
+             preserveAspectRatio="xMidYMid meet"
+             filter={tintId ? `url(#${tintId})` : undefined} />
+    </g>
   );
 }
 
@@ -538,20 +566,66 @@ function renderText(el: TextElement, ctx: RenderCtx) {
   );
 }
 
+/**
+ * Build an SVG node for a stat-element background. Centred on a
+ * (w × h) box at origin (0, 0). Shapes that don't naturally fill the
+ * box (circle, regular polygons) inscribe themselves in the smallest
+ * axis so they stay symmetrical.
+ */
+export function statShapeNode(
+  shape: StatElement["shape"], w: number, h: number,
+  fillProps: { fill: string; fillOpacity?: number },
+): JSX.Element {
+  const cx = w / 2, cy = h / 2;
+  const r = Math.min(w, h) / 2;
+  switch (shape) {
+    case "rect":
+      return <rect x={0} y={0} width={w} height={h} rx={1} ry={1} {...fillProps} />;
+    case "diamond":
+      return <polygon points={`${cx},0 ${w},${cy} ${cx},${h} 0,${cy}`} {...fillProps} />;
+    case "shield":
+      return <path d={`M 0 0 H ${w} V ${h * 0.6} Q ${cx} ${h} 0 ${h * 0.6} Z`} {...fillProps} />;
+    case "hexagon":
+      return <polygon points={polygonPoints(cx, cy, r, 6, -Math.PI / 2)} {...fillProps} />;
+    case "triangle":
+      return <polygon points={polygonPoints(cx, cy, r, 3, -Math.PI / 2)} {...fillProps} />;
+    case "pentagon":
+      return <polygon points={polygonPoints(cx, cy, r, 5, -Math.PI / 2)} {...fillProps} />;
+    case "octagon":
+      return <polygon points={polygonPoints(cx, cy, r, 8, -Math.PI / 8)} {...fillProps} />;
+    case "star":
+      return <polygon points={starPoints(cx, cy, r, r * 0.5, 5, -Math.PI / 2)} {...fillProps} />;
+    case "circle":
+    default:
+      return <circle cx={cx} cy={cy} r={r} {...fillProps} />;
+  }
+}
+
+function polygonPoints(cx: number, cy: number, r: number, sides: number, startAngle: number): string {
+  const pts: string[] = [];
+  for (let i = 0; i < sides; i++) {
+    const a = startAngle + (i * 2 * Math.PI) / sides;
+    pts.push(`${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`);
+  }
+  return pts.join(" ");
+}
+
+function starPoints(cx: number, cy: number, rOuter: number, rInner: number, points: number, startAngle: number): string {
+  const pts: string[] = [];
+  for (let i = 0; i < points * 2; i++) {
+    const a = startAngle + (i * Math.PI) / points;
+    const r = i % 2 === 0 ? rOuter : rInner;
+    pts.push(`${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`);
+  }
+  return pts.join(" ");
+}
+
 function renderStat(el: StatElement) {
-  const r = Math.min(el.w, el.h) / 2;
   const cx = el.w / 2;
   const cy = el.h / 2;
   const { paint, opacity, defs } = fillToPaint(el.background ?? { kind: "solid", color: "#e63946" }, el.id);
   const fillProps = { fill: paint, fillOpacity: opacity };
-  const shape =
-    el.shape === "rect"
-      ? <rect x={0} y={0} width={el.w} height={el.h} rx={1} ry={1} {...fillProps} />
-      : el.shape === "diamond"
-      ? <polygon points={`${cx},0 ${el.w},${cy} ${cx},${el.h} 0,${cy}`} {...fillProps} />
-      : el.shape === "shield"
-      ? <path d={`M 0 0 H ${el.w} V ${el.h * 0.6} Q ${cx} ${el.h} 0 ${el.h * 0.6} Z`} {...fillProps} />
-      : <circle cx={cx} cy={cy} r={r} {...fillProps} />;
+  const shape = statShapeNode(el.shape, el.w, el.h, fillProps);
   const hasStroke = !!(el.style.stroke && el.style.stroke.width > 0);
   return (
     <g key={el.id}>
@@ -564,6 +638,9 @@ function renderStat(el: StatElement) {
         fontSize={el.style.size}
         fill={el.style.color}
         textAnchor="middle" dominantBaseline="central"
+        fontStyle={el.style.italic ? "italic" : undefined}
+        textDecoration={el.style.underline ? "underline" : undefined}
+        letterSpacing={el.style.letterSpacing}
         stroke={hasStroke ? el.style.stroke!.color : undefined}
         strokeWidth={hasStroke ? el.style.stroke!.width : undefined}
         paintOrder={hasStroke ? "stroke fill" : undefined}

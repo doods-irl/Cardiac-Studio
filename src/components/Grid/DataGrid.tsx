@@ -7,6 +7,7 @@ import { importImage } from "@/engine/format/assets";
 import { hasTauri, assetFileUrl } from "@/io/tauri";
 import { IconAutocompleteTextarea } from "@/components/Panels/IconAutocompleteTextarea";
 import { CsvListInput } from "@/components/Panels/CsvListInput";
+import { confirmAction, showAlert } from "@/components/Shell/Dialog";
 
 const NEW_FIELD_TYPES: FieldType[] = ["text","longtext","number","bool","enum","variable","color","image","tags","date"];
 
@@ -89,10 +90,14 @@ export function DataGrid({ fullscreen = false }: { fullscreen?: boolean }) {
               ))}
             </select>
           )}
-          <button onClick={() => {
+          <button onClick={async () => {
             if (!newFieldName.trim()) return;
             if (newFieldType === "variable" && !newFieldVarId) {
-              alert("Pick a variable first.");
+              await showAlert({
+                title: "Variable required",
+                message: "Pick a variable first.",
+                tone: "warning",
+              });
               return;
             }
             const f: FieldDef = {
@@ -133,9 +138,15 @@ export function DataGrid({ fullscreen = false }: { fullscreen?: boolean }) {
                   {f.name}
                   <span className="ftype">{f.type}</span>
                   <span className="close" title="Remove column"
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      if (confirm(`Remove column "${f.name}"?`)) removeField(ds.id, f.id);
+                      const ok = await confirmAction({
+                        title: "Remove column",
+                        message: `Remove column "${f.name}"?`,
+                        okLabel: "Remove",
+                        danger: true,
+                      });
+                      if (ok) removeField(ds.id, f.id);
                     }}>×</span>
                 </th>
               ))}
@@ -164,8 +175,14 @@ export function DataGrid({ fullscreen = false }: { fullscreen?: boolean }) {
                         if (newRowId) setActiveRecord(newRowId);
                       }}>⎘</button>
                     <button className="row-action danger" title="Delete row"
-                      onClick={() => {
-                        if (confirm("Delete row?")) deleteRecord(ds.id, row.id);
+                      onClick={async () => {
+                        const ok = await confirmAction({
+                          title: "Delete row",
+                          message: "Delete this row?",
+                          okLabel: "Delete",
+                          danger: true,
+                        });
+                        if (ok) deleteRecord(ds.id, row.id);
                       }}>×</button>
                   </div>
                 </td>

@@ -5,7 +5,7 @@
  * so palette swatches are one click away instead of buried behind the
  * OS colour chooser.
  */
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useDoc } from "@/store/document";
 
@@ -14,6 +14,45 @@ export interface PalettePickerProps {
   onChange: (hex: string) => void;
   title?: string;
 }
+
+/**
+ * Wraps `<input type="color">` so it only commits on the native `change`
+ * event (OS picker dismissed) — not on every `input` event fired while
+ * the user drags through colours. React's synthetic `onChange` fires for
+ * both events, which made the hex value flicker through every hovered
+ * colour and dropped each one into undo history. Listening to `change`
+ * via addEventListener gives us commit-only semantics.
+ *
+ * `value` is mirrored onto the underlying input each render so the
+ * picker reopens at the current colour even though we don't bind it as
+ * a controlled React input.
+ */
+export const NativeColorInput = forwardRef<
+  HTMLInputElement,
+  { value: string; onCommit: (hex: string) => void }
+>(function NativeColorInput({ value, onCommit }, ref) {
+  const innerRef = useRef<HTMLInputElement>(null);
+  useImperativeHandle(ref, () => innerRef.current as HTMLInputElement, []);
+
+  useEffect(() => {
+    const el = innerRef.current;
+    if (!el) return;
+    const handler = (e: Event) => {
+      onCommit((e.target as HTMLInputElement).value);
+    };
+    el.addEventListener("change", handler);
+    return () => el.removeEventListener("change", handler);
+  }, [onCommit]);
+
+  // Keep the input's value in sync when the parent state changes from
+  // somewhere else (palette swatch click, hex text-field edit, undo).
+  useEffect(() => {
+    const el = innerRef.current;
+    if (el && el.value !== value) el.value = value;
+  }, [value]);
+
+  return <input ref={innerRef} type="color" defaultValue={value} />;
+});
 
 export function PalettePicker({ value, onChange, title }: PalettePickerProps) {
   const palette = useDoc((s) => s.loaded?.project.palette ?? []);
@@ -85,11 +124,10 @@ export function PalettePicker({ value, onChange, title }: PalettePickerProps) {
             ))}
           </div>
           <div className="palette-picker-custom">
-            <input
+            <NativeColorInput
               ref={customRef}
-              type="color"
               value={value || "#000000"}
-              onChange={(e) => onChange(e.target.value)}
+              onCommit={onChange}
             />
             <button type="button" className="palette-picker-custom-btn"
               onClick={() => customRef.current?.click()}>

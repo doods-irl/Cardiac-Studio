@@ -52,39 +52,16 @@ export const invoke = {
     items: { filename: string; svg: string }[];
     widthPx: number; heightPx: number;
   }) => getInvoke()<string[]>("export_deck_pngs", { args }),
+  exportDeckPdf: (args: {
+    projectPath: string; outPath: string;
+    items: { filename: string; svg: string }[];
+    widthPx: number; heightPx: number;
+    cardWidthMm: number; cardHeightMm: number;
+    pageWidthMm: number; pageHeightMm: number;
+    marginMm: number; bleedMm: number;
+    cropMarks: boolean;
+  }) => getInvoke()<string>("export_deck_pdf", { args }),
 };
-
-/**
- * Cross-platform confirmation dialog. Returns `true` if the user
- * confirmed, `false` if they declined or the dialog failed.
- *
- * Tauri 2 hijacks the browser `window.confirm` to route through its
- * dialog plugin, which makes it async (returns a Promise<boolean>) —
- * so code that does `if (!window.confirm(...))` evaluates a Promise
- * as truthy and misbehaves. This helper awaits the Tauri plugin
- * explicitly via a dynamic import and falls back to the synchronous
- * browser `window.confirm` when Tauri isn't present.
- */
-export async function confirmDialog(
-  message: string,
-  opts?: { title?: string; okLabel?: string; cancelLabel?: string; kind?: "warning" | "info" },
-): Promise<boolean> {
-  if (hasTauri()) {
-    try {
-      const { ask } = await import("@tauri-apps/plugin-dialog");
-      return await ask(message, {
-        title:        opts?.title        ?? "Cardiac",
-        okLabel:      opts?.okLabel      ?? "OK",
-        cancelLabel:  opts?.cancelLabel  ?? "Cancel",
-        kind:         opts?.kind         ?? "warning",
-      });
-    } catch (e) {
-      console.warn("[confirm] Tauri dialog failed, falling back to window.confirm", e);
-    }
-  }
-  // Browser fallback — synchronous, returns boolean directly.
-  return typeof window !== "undefined" ? window.confirm(message) : false;
-}
 
 /**
  * Build a URL the webview can fetch for a file inside the project

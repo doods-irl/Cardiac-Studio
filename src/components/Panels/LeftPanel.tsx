@@ -27,7 +27,7 @@ import type {
 } from "@/model/types";
 import { DEFAULT_TEXT_STYLE } from "@/model/defaults";
 import { ContextMenu, type ContextMenuItem } from "@/components/Panels/ContextMenu";
-import { confirmDialog } from "@/io/tauri";
+import { confirmAction } from "@/components/Shell/Dialog";
 import {
   setElementClipboard, getElementClipboard, hasElementClipboard,
 } from "@/io/clipboard";
@@ -797,11 +797,14 @@ function CardView() {
             glyph: "✕", danger: true, disabled: !canDelete,
             onSelect: async () => {
               if (!canDelete) return;
-              const ok = await confirmDialog(
-                `Delete card "${tpl.name}"? This goes into undo for the session, ` +
-                `but won't persist across restarts.`,
-                { title: "Delete card", kind: "warning", okLabel: "Delete" },
-              );
+              const ok = await confirmAction({
+                title: "Delete card",
+                message:
+                  `Delete card "${tpl.name}"? This goes into undo for the session, ` +
+                  `but won't persist across restarts.`,
+                okLabel: "Delete",
+                danger: true,
+              });
               if (!ok) return;
               removeTemplate(tpl.id);
               // If we just deleted the active one, pick another.

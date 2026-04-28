@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AssetRef, NamedIcon } from "@/model/types";
 import { Icon } from "@/components/Shell/Icons";
+import { NativeColorInput } from "./PalettePicker";
 
 /**
  * Wrap the current textarea selection with `open`/`close` markers,
@@ -297,9 +298,10 @@ export function IconAutocompleteTextarea({
             </button>
             <label className="rt-btn rt-color" title="Colour · [c=#hex]…[/c]"
               onMouseDown={stop}>
-              <input type="color"
-                onMouseDown={stop}
-                onChange={(e) => runWrap(`[c=${e.target.value}]`, "[/c]")} />
+              <NativeColorInput
+                value="#000000"
+                onCommit={(hex) => runWrap(`[c=${hex}]`, "[/c]")}
+              />
             </label>
           </div>
         );
